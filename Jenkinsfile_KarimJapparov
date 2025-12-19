@@ -1,0 +1,78 @@
+pipeline {
+  agent any
+  options { timestamps() }
+
+  environment {
+    APP_DIR = "ToDoApp"
+    DOCKER_CREDS = "dockerhub_karimjapparov"
+    STABLE_TAG = "1.1"
+  }
+
+  stages {
+    stage('Checkout') {
+      steps { checkout scm }
+    }
+
+    stage('Build (skip tests)') {
+      steps {
+        sh "cd ${APP_DIR} && ./gradlew clean build -x test"
+      }
+    }
+
+    stage('Docker Build & Push') {
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: "${DOCKER_CREDS}",
+          usernameVariable: 'DOCKER_USER',
+          passwordVariable: 'DOCKER_PASS'
+        )]) {
+          sh '''
+            set -e
+            IMAGE_REPO="${DOCKER_USER}/todo-app"
+            SHORT_SHA="$(git rev-parse --short=7 HEAD)"
+            DYN_TAG="${BUILD_NUMBER}-${SHORT_SHA}"
+
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+
+            cd ToDoApp
+            docker build -t "${IMAGE_REPO}:${DYN_TAG}" -f Dockerfile_KarimJapparov .
+            docker tag "${IMAGE_REPO}:${DYN_TAG}" "${IMAGE_REPO}:${STABLE_TAG}"
+
+            docker push "${IMAGE_REPO}:${DYN_TAG}"
+            docker push "${IMAGE_REPO}:${STABLE_TAG}"
+          '''
+        }
+      }
+    }
+
+    stage('Deploy (main only)') {
+      when { branch 'main' }
+      steps {
+        withCredentials([usernamePassword(
+          credentialsId: "${DOCKER_CREDS}",
+          usernameVariable: 'DOCKER_USER',
+          passwordVariable: 'DOCKER_PASS'
+        )]) {
+          sh '''
+            set -e
+            IMAGE_REPO="${DOCKER_USER}/todo-app"
+
+            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+            docker pull "${IMAGE_REPO}:${STABLE_TAG}"
+
+            cd /opt/devops-project/docker
+            docker compose -f docker-compose_KarimJapparov.yml --env-file .env up -d
+          '''
+        }
+      }
+    }
+  }
+
+  post {
+    always {
+      archiveArtifacts artifacts: 'ToDoApp/build/libs/*.jar', fingerprint: true
+    }
+    success { echo "✅ SUCCESS" }
+    failure { echo "❌ FAILED" }
+  }
+}
