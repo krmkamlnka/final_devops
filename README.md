@@ -1,2 +1,2 @@
-# devops-project
+# devops-project (develop)
 Feature: Git workflow
