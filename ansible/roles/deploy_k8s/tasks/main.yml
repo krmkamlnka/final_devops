@@ -1,0 +1,30 @@
+- name: Ensure k8s manifests dir exists
+  file:
+    path: "{{ k8s_dir }}"
+    state: directory
+    mode: "0755"
+
+- name: Render k8s manifests (KarimJapparov)
+  template:
+    src: "{{ item }}.j2"
+    dest: "{{ k8s_dir }}/{{ item }}"
+    mode: "0644"
+  loop:
+    - configmap_KarimJapparov.yaml
+    - secret_KarimJapparov.yaml
+    - deployment_KarimJapparov.yaml
+    - service_KarimJapparov.yaml
+    - hpa_KarimJapparov.yaml
+
+- name: Apply k8s manifests
+  command: kubectl apply -f "{{ k8s_dir }}/{{ item }}"
+  loop:
+    - deployment_KarimJapparov.yaml
+    - configmap_KarimJapparov.yaml
+    - secret_KarimJapparov.yaml
+    - service_KarimJapparov.yaml
+    - hpa_KarimJapparov.yaml
+
+- name: Wait for app rollout
+  command: kubectl rollout status deployment/todo-app -n "{{ k8s_namespace }}" --timeout=180s
+  changed_when: false

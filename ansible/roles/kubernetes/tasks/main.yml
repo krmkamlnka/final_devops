@@ -1,0 +1,30 @@
+- name: Install dependencies
+  apt:
+    name:
+      - curl
+    state: present
+    update_cache: yes
+
+- name: Install kubectl (arm64)
+  get_url:
+    url: "https://dl.k8s.io/release/{{ kubectl_version }}/bin/linux/arm64/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: "0755"
+
+- name: Install minikube (arm64)
+  get_url:
+    url: "https://github.com/kubernetes/minikube/releases/download/{{ minikube_version }}/minikube-linux-arm64"
+    dest: /usr/local/bin/minikube
+    mode: "0755"
+
+- name: Start minikube with docker driver (idempotent-ish)
+  command: minikube start --driver=docker
+  register: minikube_start
+  changed_when: "'Done!' in (minikube_start.stdout + minikube_start.stderr)"
+  failed_when: false
+
+- name: Enable metrics-server addon (for HPA)
+  command: minikube addons enable metrics-server
+  register: metrics_enable
+  changed_when: "'enabled' in (metrics_enable.stdout + metrics_enable.stderr)"
+  failed_when: false

@@ -1,0 +1,26 @@
+- name: Install Docker engine (docker.io)
+  apt:
+    name: docker.io
+    state: present
+    update_cache: yes
+
+- name: Ensure Docker service is running
+  service:
+    name: docker
+    state: started
+    enabled: true
+
+- name: Add devops user to docker group
+  user:
+    name: "{{ devops_user }}"
+    groups: docker
+    append: true
+  notify: restart docker
+
+- name: Add jenkins user to docker group (if exists)
+  user:
+    name: jenkins
+    groups: docker
+    append: true
+  ignore_errors: true
+  notify: restart docker

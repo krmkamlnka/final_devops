@@ -1,0 +1,9 @@
+devops_user: devops
+
+kubectl_version: "v1.35.0"
+minikube_version: "v1.37.0"
+
+dockerhub_image: "krmka/todo-app:1.1"
+
+k8s_namespace: "todo"
+k8s_dir: "/opt/devops-project/k8s"

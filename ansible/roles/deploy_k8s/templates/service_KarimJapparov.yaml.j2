@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-db
+  namespace: {{ k8s_namespace }}
+spec:
+  selector:
+    app: todo-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-app
+  namespace: {{ k8s_namespace }}
+spec:
+  selector:
+    app: todo-app
+  ports:
+    - port: 9889
+      targetPort: 9889
+      nodePort: 30889
+  type: NodePort

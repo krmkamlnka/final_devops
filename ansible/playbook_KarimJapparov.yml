@@ -1,0 +1,12 @@
+- name: DevOps Final - Provision & Deploy (KarimJapparov)
+  hosts: vm
+  become: true
+
+  vars_files:
+    - vault_KarimJapparov.yml
+
+  roles:
+    - docker
+    - kubernetes
+    - jenkins
+    - deploy_k8s
